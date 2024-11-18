@@ -10,6 +10,15 @@
 #include "Sound/SoundSubmix.h"
 #include "SubmixEffects/AudioMixerSubmixEffectReverb.h"
 
+#if UE_ENABLE_DEBUG_DRAWING
+static TAutoConsoleVariable<float> CVarDebugReverbParametersPrintInterval(
+	TEXT("PR.Debug.Reverb.ParametersPrintInterval"),
+	0.5f,
+	TEXT("How often debug should be printed to log"),
+	ECVF_Default
+);
+#endif // UE_ENABLE_DEBUG_DRAWING
+
 
 // Sets default values for this component's properties
 UProceduralReverbActorComponent::UProceduralReverbActorComponent()
@@ -59,6 +68,7 @@ void UProceduralReverbActorComponent::TickComponent(float DeltaTime, ELevelTick 
 
 	float Sum = 0.0f;
 	TMap<TSharedPtr<FPR_BSPNode>, float> NodesWeights;
+	// TODO: Check visibility to ignore nodes that are not visible
 	for (TSharedPtr<FPR_BSPNode>& Node : NearbyNodes)
 	{
 		if (!Node->AcousticData)
@@ -84,14 +94,20 @@ void UProceduralReverbActorComponent::TickComponent(float DeltaTime, ELevelTick 
 	CalculatedSettings.Density = 0;
 	CalculatedSettings.WetLevel = 0;
 
+	float MaxWeight = 0.0f;
 	for (auto& [Node, Weight] : NodesWeights)
 	{
 		Node->DrawDebug(GetWorld());
 		const float NormalizedWeight = Weight / Sum;
 		CalculatedSettings.DecayTime += (Node->AcousticData->ReverbSettings.DecayTime) * NormalizedWeight;
-		CalculatedSettings.Gain += Node->AcousticData->ReverbSettings.Gain * NormalizedWeight;
-		CalculatedSettings.Density += Node->AcousticData->ReverbSettings.Density * NormalizedWeight;
-		CalculatedSettings.WetLevel += Node->AcousticData->ReverbSettings.WetLevel * NormalizedWeight;
+
+		if (Weight > MaxWeight)
+		{
+			MaxWeight = Weight;
+			CalculatedSettings.Gain = Node->AcousticData->ReverbSettings.Gain;
+			CalculatedSettings.Density = Node->AcousticData->ReverbSettings.Density;
+			CalculatedSettings.WetLevel = Node->AcousticData->ReverbSettings.WetLevel;
+		}
 	}
 
 	// Assign the reverb preset to the submix's effect chain
@@ -104,10 +120,21 @@ void UProceduralReverbActorComponent::TickComponent(float DeltaTime, ELevelTick 
 		}
 	}
 
+#if UE_ENABLE_DEBUG_DRAWING
+	static float TimePassedSincePrint = 0.0f;
+	if (TimePassedSincePrint < CVarDebugReverbParametersPrintInterval.GetValueOnGameThread())
+	{
+		TimePassedSincePrint += DeltaTime;
+		return;
+	}
+
+	TimePassedSincePrint = 0.0f;
+
 	UE_LOG(LogPrPartition, Verbose, TEXT("Decay: [%.2f] Gain [%.2f] Density [%.2f] Wet Level [%.2f]"),
 		CalculatedSettings.DecayTime,
 		CalculatedSettings.Gain,
 		CalculatedSettings.Density,
 		CalculatedSettings.WetLevel);
+#endif // UE_ENABLE_DEBUG_DRAWING
 }
 
