@@ -70,7 +70,7 @@ void UPR_PartitionWorldSubsystem::Tick(float DeltaTime)
 
 	if (RootNode)
 	{
-		// RootNode->DrawDebug(GetWorld());
+		RootNode->DrawDebug(GetWorld());
 	}
 }
 

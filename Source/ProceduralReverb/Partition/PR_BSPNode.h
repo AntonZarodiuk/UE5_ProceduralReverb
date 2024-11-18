@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Chaos/ChaosEngineInterface.h"
 #include "CoreMinimal.h"
 #include "SubmixEffects/AudioMixerSubmixEffectReverb.h"
 
@@ -36,7 +37,7 @@ enum EDistances
 
 struct FPR_BSPNode
 {
-	FPR_BSPNode(const FBox& BoundingBox) : BoundingBox(BoundingBox) {}
+	FPR_BSPNode(const FBox& BoundingBox);
 
 	void PartitionSpace(int32 Depth);
 	void CollectAcousticData(const UWorld* World);
@@ -63,4 +64,6 @@ struct FPR_BSPNode
 	TSharedPtr<FPR_AcousticData> AcousticData;
 
 	FColor Color = FColor::MakeRandomColor();
+
+	int32 NodeId = INDEX_NONE;
 };

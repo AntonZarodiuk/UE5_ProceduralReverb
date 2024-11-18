@@ -31,8 +31,5 @@ private:
 	USoundSubmix* ReverbSubmix = nullptr;
 
 	UPROPERTY(EditAnywhere)
-	USubmixEffectReverbPreset* ReverbPreset = nullptr;
-
-	UPROPERTY(EditAnywhere)
 	float NodesSearchRadius = 1000.0f;
 };

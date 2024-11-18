@@ -1,8 +1,25 @@
 ﻿#include "PR_BSPNode.h"
 
+#include "ProceduralReverb/LogPrPartition.h"
 #include "NNERuntimeCPU.h"
 #include "Settings/ProceduralReverbSettings.h"
 
+
+#if UE_ENABLE_DEBUG_DRAWING
+static TAutoConsoleVariable<int32> CVarDebugPartition(
+	TEXT("PR.Debug.Partition"),
+	0,
+	TEXT("Shows world partition debug"),
+	ECVF_Default
+);
+#endif // UE_ENABLE_DEBUG_DRAWING
+
+
+FPR_BSPNode::FPR_BSPNode(const FBox& BoundingBox): BoundingBox(BoundingBox)
+{
+	static int32 NodeCount = 0;
+	NodeId = ++NodeCount;
+}
 
 void FPR_BSPNode::PartitionSpace(int32 Depth)
 {
@@ -72,7 +89,7 @@ void FPR_BSPNode::CollectAcousticData(const UWorld* World)
 			Distance = (Hit.ImpactPoint - Start).Size();
 			UPhysicalMaterial* Material = Hit.PhysMaterial.Get();
 			SurfaceType = Material ? Material->SurfaceType.GetValue() : SurfaceType_Default;
-			//UE_LOG(LogTemp, Log, TEXT("Found wall: %s - %f"), *UEnum::GetValueAsString(SurfaceType), Distance);
+			UE_LOG(LogPrPartition, Verbose, TEXT("Found wall: %s - %f"), *GetNameSafe(Material), Distance);
 		}
 
 		AcousticData->Distances.Add(Distance);
@@ -185,7 +202,7 @@ void FPR_BSPNode::RunModel(
 	UE::NNE::EResultStatus Result = ModelInstance->RunSync(InputBindings, OutputBindings);
 	if (Result == UE::NNE::EResultStatus::Fail)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to run the model"));
+		UE_LOG(LogPrPartition, Error, TEXT("Failed to run the model"));
 		return;
 	}
 
@@ -218,14 +235,34 @@ void FPR_BSPNode::ConvertAcousticData(TArray<float>& OutData) const
 
 void FPR_BSPNode::SaveModelOutputData(const TArray<float>& OutputData) const
 {
+	// more parameters can be added here
+	check(OutputData.Num() >= 4);
+
 	AcousticData->ReverbSettings.DecayTime = FMath::Clamp(OutputData[0], 0.0f, 5.0f);
 	AcousticData->ReverbSettings.Gain = FMath::Clamp(OutputData[1], 0.0f, 1.0f);
 	AcousticData->ReverbSettings.Density = FMath::Clamp(OutputData[2], 0.0f, 1.0f);
 	AcousticData->ReverbSettings.WetLevel = FMath::Clamp(OutputData[3], 0.0f, 1.0f);
+
+	UE_LOG(
+		LogPrPartition,
+		Verbose,
+		TEXT("Saving model output data for node [%d]: Decay [%.2f] Gain [%.2f] Density [%.2f] Wet Level [%.2f]"),
+		NodeId,
+		AcousticData->ReverbSettings.DecayTime,
+		AcousticData->ReverbSettings.Gain,
+		AcousticData->ReverbSettings.Density,
+		AcousticData->ReverbSettings.WetLevel
+	);
 }
 
 void FPR_BSPNode::DrawDebug(const UWorld* World) const
 {
+#if UE_ENABLE_DEBUG_DRAWING
+	if (!CVarDebugPartition.GetValueOnGameThread())
+	{
+		return;
+	}
+
 	if (!bIsLeaf)
 	{
 		LeftChild->DrawDebug(World);
@@ -234,4 +271,5 @@ void FPR_BSPNode::DrawDebug(const UWorld* World) const
 	}
 
 	DrawDebugBox(World, BoundingBox.GetCenter(), BoundingBox.GetExtent(), Color, false, -1, 0, 5);
+#endif // UE_ENABLE_DEBUG_DRAWING
 }

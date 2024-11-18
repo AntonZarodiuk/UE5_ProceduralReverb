@@ -4,6 +4,7 @@
 #include "ProceduralReverbActorComponent.h"
 
 #include "Components/AudioComponent.h"
+#include "ProceduralReverb/LogPrPartition.h"
 #include "ProceduralReverb/Partition/PR_BSPNode.h"
 #include "ProceduralReverb/Partition/PR_PartitionWorldSubsystem.h"
 #include "Sound/SoundSubmix.h"
@@ -13,23 +14,13 @@
 // Sets default values for this component's properties
 UProceduralReverbActorComponent::UProceduralReverbActorComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
 }
 
 
 // Called when the game starts
 void UProceduralReverbActorComponent::BeginPlay()
 {
-	Super::BeginPlay();
-	if (!ReverbPreset)
-	{
-		ReverbPreset = NewObject<USubmixEffectReverbPreset>(this);
-	}
-
 	if (!ReverbSubmix)
 	{
 		ReverbSubmix = NewObject<USoundSubmix>(this);
@@ -92,6 +83,7 @@ void UProceduralReverbActorComponent::TickComponent(float DeltaTime, ELevelTick 
 	CalculatedSettings.Gain = 0;
 	CalculatedSettings.Density = 0;
 	CalculatedSettings.WetLevel = 0;
+
 	for (auto& [Node, Weight] : NodesWeights)
 	{
 		Node->DrawDebug(GetWorld());
@@ -102,11 +94,8 @@ void UProceduralReverbActorComponent::TickComponent(float DeltaTime, ELevelTick 
 		CalculatedSettings.WetLevel += Node->AcousticData->ReverbSettings.WetLevel * NormalizedWeight;
 	}
 
-	// CalculatedSettings.Gain = 1.0f;
-	// CalculatedSettings.WetLevel = 1.0f;
-
 	// Assign the reverb preset to the submix's effect chain
-	for (auto Effect : ReverbSubmix->SubmixEffectChain)
+	for (TObjectPtr<USoundEffectSubmixPreset> Effect : ReverbSubmix->SubmixEffectChain)
 	{
 		auto* Reverb = Cast<USubmixEffectReverbPreset>(Effect);
 		if (Reverb)
@@ -115,12 +104,10 @@ void UProceduralReverbActorComponent::TickComponent(float DeltaTime, ELevelTick 
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Decay: [%f]"), CalculatedSettings.DecayTime);
-	TArray<UAudioComponent*> AudioComponents;
-	GetOwner()->GetComponents<UAudioComponent>(AudioComponents);
-	// for (UAudioComponent* AudioComponent : AudioComponents)
-	// {
-	// 	AudioComponent->SetSubmixSend(ReverbSubmix, 1.0f);
-	// }
+	UE_LOG(LogPrPartition, Verbose, TEXT("Decay: [%.2f] Gain [%.2f] Density [%.2f] Wet Level [%.2f]"),
+		CalculatedSettings.DecayTime,
+		CalculatedSettings.Gain,
+		CalculatedSettings.Density,
+		CalculatedSettings.WetLevel);
 }
 
