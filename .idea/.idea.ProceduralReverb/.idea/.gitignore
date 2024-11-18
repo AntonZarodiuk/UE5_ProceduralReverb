@@ -1,13 +1,76 @@
-﻿# Default ignored files
-/shelf/
-/workspace.xml
-# Rider ignored files
-/.idea.ProceduralReverb.iml
-/modules.xml
-/contentModel.xml
-/projectSettingsUpdater.xml
-# Editor-based HTTP Client requests
-/httpRequests/
-# Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
+# Ignore all files by default
+/*
+
+# Allow folders for sharing
+!/Config/
+!/Content/
+!/Source/
+
+# If you use a .uproject file, allow it
+!*.uproject
+
+# Ignore system-generated files
+.DS_Store
+Thumbs.db
+
+# Ignore build and intermediate directories
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/Windows/
+Build/Mac/
+Build/Linux/
+Build/Android/
+Build/IOS/
+
+# Ignore user-specific settings
+*.suo
+*.user
+*.userossc
+*.usersettings
+*.VC.db
+
+# Ignore logs
+*.log
+
+# Ignore compiled assets
+*.bin
+*.dat
+*.pak
+*.shadercache
+*.gpuprogramcache
+
+# Ignore crash reports
+CrashReportClient/
+
+# Ignore local editor configuration
+.vscode/
+.idea/
+*.opensdf
+*.sdf
+*.sln
+*.VC.db
+
+# Optional: Ignore plugin binaries and intermediates (if not shared)
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+
+# Optional: Ignore platform-specific settings or build files
+*.xcodeproj
+*.xcworkspace
+*.iproject
+
+# Ignore build outputs
+*.pdb
+*.obj
+*.dll
+*.exe
+*.lib
+*.exp
+*.app
+*.dylib
+*.so
+*.ipa
+*.apk
+*.o
