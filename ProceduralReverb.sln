@@ -8,6 +8,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Engine", "Engine", "{233774A8-CC9D-3FA9-86D1-90573E92B704}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Games", "Games", "{DE1F8B53-6C02-3C13-9101-A7C8D96F3FF6}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Programs", "Programs", "{A338B9E2-A559-34BE-A46D-F789DD488FAD}"
 EndProject
@@ -147,7 +150,7 @@ Global
 	EndGlobalSection
 	# UnrealVS Section
 	GlobalSection(ddbf523f-7eb6-4887-bd51-85a714ff87eb) = preSolution
-		AvailablePlatforms=Win64
+		AvailablePlatforms = Win64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{BEFE63E5-468F-34A0-823B-460644E5ECDE}.DebugGame Editor|Win64.ActiveCfg = BuiltWithUnrealBuildTool|Win64
