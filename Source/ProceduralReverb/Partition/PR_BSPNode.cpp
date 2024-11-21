@@ -56,8 +56,56 @@ void FPR_BSPNode::PartitionSpace(int32 Depth)
 	LeftChild = MakeShared<FPR_BSPNode>(LeftBox);
 	RightChild = MakeShared<FPR_BSPNode>(RightBox);
 
+	// TODO: Dirty hack, fix later
+	LeftChild->SharedThis = LeftChild;
 	LeftChild->PartitionSpace(Depth + 1);
+
+	RightChild->SharedThis = RightChild;
 	RightChild->PartitionSpace(Depth + 1);
+}
+
+void FPR_BSPNode::SearchNearbyLeafNodes(const UWorld* World, TSharedPtr<FPR_BSPNode> RootNode)
+{
+	if (!bIsLeaf)
+	{
+		if (LeftChild)
+		{
+			LeftChild->SearchNearbyLeafNodes(World, RootNode);
+		}
+
+		if (RightChild)
+		{
+			RightChild->SearchNearbyLeafNodes(World, RootNode);
+		}
+
+		return;
+	}
+
+	const FVector BoxExtents = BoundingBox.GetExtent();
+	if (BoxExtents.IsNearlyZero())
+	{
+		return;
+	}
+
+	TArray<TSharedPtr<FPR_BSPNode>> FoundNearbyNodes;
+	const FVector Center = BoundingBox.GetCenter();
+	RootNode->FindNearbyNodes(Center, BoxExtents.Size(), FoundNearbyNodes);
+
+	for (TSharedPtr<FPR_BSPNode>& Node : FoundNearbyNodes)
+	{
+		if (Node == SharedThis)
+		{
+			continue;
+		}
+
+		FHitResult Hit;
+		const FVector NodeCenter = Node->BoundingBox.GetCenter();
+		const bool bHit = World->LineTraceSingleByChannel(Hit, Center, NodeCenter, ECC_WorldStatic);
+		if (!bHit)
+		{
+			NearbyNodes.Add(Node);
+		}
+	}
 }
 
 void FPR_BSPNode::CollectAcousticData(const UWorld* World)
@@ -130,25 +178,13 @@ void FPR_BSPNode::FindNearbyNodes(
 {
 	if (bIsLeaf)
 	{
+		float Distance = DistanceTo(Position);
+		if (Distance <= SearchRadius)
+		{
+			OutNearbyNodes.Add(SharedThis);
+		}
+
 		return;
-	}
-
-	if (LeftChild->bIsLeaf)
-	{
-		float Distance = LeftChild->DistanceTo(Position);
-		if (Distance <= SearchRadius)
-		{
-			OutNearbyNodes.Add(LeftChild);
-		}
-	}
-
-	if (RightChild->bIsLeaf)
-	{
-		float Distance = RightChild->DistanceTo(Position);
-		if (Distance <= SearchRadius)
-		{
-			OutNearbyNodes.Add(RightChild);
-		}
 	}
 
 	LeftChild->FindNearbyNodes(Position, SearchRadius, OutNearbyNodes);
@@ -159,6 +195,54 @@ float FPR_BSPNode::DistanceTo(const FVector& Point) const
 {
 	const FVector ClosestPoint = BoundingBox.GetClosestPointTo(Point);
 	return FVector::Distance(ClosestPoint, Point);
+}
+
+void FPR_BSPNode::FindNearbyNodesToNode(TSharedPtr<FPR_BSPNode> Node, float SearchRadius,
+	TSet<TSharedPtr<FPR_BSPNode>>& OutNearbyNodes)
+{
+	if (!bIsLeaf)
+	{
+		LeftChild->FindNearbyNodesToNode(Node, SearchRadius, OutNearbyNodes);
+		RightChild->FindNearbyNodesToNode(Node, SearchRadius, OutNearbyNodes);
+		return;
+	}
+
+	OutNearbyNodes.Add(SharedThis);
+
+	for (TSharedPtr<FPR_BSPNode> NearbyNode : NearbyNodes)
+	{
+		const float Distance = NearbyNode->DistanceTo(Node->BoundingBox.GetCenter());
+		if (Distance < SearchRadius)
+		{
+			OutNearbyNodes.Add(NearbyNode);
+			NearbyNode->FindNearbyNodesToNode(Node, SearchRadius, OutNearbyNodes);
+		}
+	}
+}
+
+void FPR_BSPNode::FindNearbyNodesToNode(TSharedPtr<FPR_BSPNode> Node, TSet<TSharedPtr<FPR_BSPNode>>& OutNearbyNodes,
+	int32 MaxSearchDepth, int32 CurrentSearchDepth)
+{
+	if (!bIsLeaf)
+	{
+		LeftChild->FindNearbyNodesToNode(Node, OutNearbyNodes, MaxSearchDepth, CurrentSearchDepth + 1);
+		RightChild->FindNearbyNodesToNode(Node, OutNearbyNodes, MaxSearchDepth, CurrentSearchDepth + 1);
+		return;
+	}
+
+	OutNearbyNodes.Add(SharedThis);
+
+	if (CurrentSearchDepth >= MaxSearchDepth)
+	{
+		return;
+	}
+
+	for (TSharedPtr<FPR_BSPNode> NearbyNode : NearbyNodes)
+	{
+		OutNearbyNodes.Add(NearbyNode);
+
+		NearbyNode->FindNearbyNodesToNode(Node, OutNearbyNodes, MaxSearchDepth, CurrentSearchDepth + 1);
+	}
 }
 
 void FPR_BSPNode::RunModel(

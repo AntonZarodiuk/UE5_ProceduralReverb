@@ -30,7 +30,8 @@ public:
 	FBox GetInitialBoundingBox() const;
 	void GenerateBSPTree(const FBox& InitialBox);
 
-	void FindNearbyNodes(const FVector& Position, float SearchRadius, TArray<TSharedPtr<FPR_BSPNode>>& OutNearbyNodes) const;
+	void FindNearbyNodes(const FVector& Position, float SearchRadius, TSet<TSharedPtr<FPR_BSPNode>>& OutNearbyNodes) const;
+	void FindNearbyNodes(const FVector& Position, TSet<TSharedPtr<FPR_BSPNode>>& OutNearbyNodes, int32 MaxSearchDepth = 0, int32 CurrentSearchDepth = 0) const;
 
 private:
 	TSharedPtr<FPR_BSPNode> RootNode;

@@ -30,6 +30,8 @@ UProceduralReverbActorComponent::UProceduralReverbActorComponent()
 // Called when the game starts
 void UProceduralReverbActorComponent::BeginPlay()
 {
+	Super::BeginPlay();
+
 	if (!ReverbSubmix)
 	{
 		ReverbSubmix = NewObject<USoundSubmix>(this);
@@ -52,13 +54,14 @@ void UProceduralReverbActorComponent::TickComponent(float DeltaTime, ELevelTick 
 		return;
 	}
 
-	TArray<TSharedPtr<FPR_BSPNode>> NearbyNodes;
-	ReverbSubsystem->FindNearbyNodes(Position, NodesSearchRadius, NearbyNodes);
-
-	if (NodesSearchRadius <= 0.0)
+	TSet<TSharedPtr<FPR_BSPNode>> NearbyNodes;
+	if (bSearchByRadius)
 	{
-		// TODO: Handle
-		return;
+		ReverbSubsystem->FindNearbyNodes(Position, NodesSearchRadius, NearbyNodes);
+	}
+	else
+	{
+		ReverbSubsystem->FindNearbyNodes(Position, NearbyNodes, NodesSearchDepth);
 	}
 
 	if (NearbyNodes.IsEmpty())

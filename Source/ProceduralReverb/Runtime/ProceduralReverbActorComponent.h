@@ -31,5 +31,11 @@ private:
 	USoundSubmix* ReverbSubmix = nullptr;
 
 	UPROPERTY(EditAnywhere)
+	bool bSearchByRadius = false;
+
+	UPROPERTY(EditAnywhere)
 	float NodesSearchRadius = 1000.0f;
+
+	UPROPERTY(EditAnywhere)
+	int32 NodesSearchDepth = 2;
 };

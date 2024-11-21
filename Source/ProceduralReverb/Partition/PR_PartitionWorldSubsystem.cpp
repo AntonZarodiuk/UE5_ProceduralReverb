@@ -70,7 +70,7 @@ void UPR_PartitionWorldSubsystem::Tick(float DeltaTime)
 
 	if (RootNode)
 	{
-		RootNode->DrawDebug(GetWorld());
+		// RootNode->DrawDebug(GetWorld());
 	}
 }
 
@@ -142,13 +142,35 @@ void UPR_PartitionWorldSubsystem::GenerateBSPTree(const FBox& InitialBox)
 
 	RootNode = MakeShared<FPR_BSPNode>(InitialBox);
 	RootNode->PartitionSpace(0);
+	RootNode->SearchNearbyLeafNodes(GetWorld(), RootNode);
 }
 
 void UPR_PartitionWorldSubsystem::FindNearbyNodes(const FVector& Position, float SearchRadius,
-												TArray<TSharedPtr<FPR_BSPNode>>& OutNearbyNodes) const
+	TSet<TSharedPtr<FPR_BSPNode>>& OutNearbyNodes) const
 {
-	if (RootNode)
+	if (!RootNode)
 	{
-		RootNode->FindNearbyNodes(Position, SearchRadius, OutNearbyNodes);
+		return;
+	}
+
+	if (TSharedPtr<FPR_BSPNode> Node = RootNode->FindNode(Position))
+	{
+		OutNearbyNodes.Add(Node);
+		Node->FindNearbyNodesToNode(Node, SearchRadius, OutNearbyNodes);
+	}
+}
+
+void UPR_PartitionWorldSubsystem::FindNearbyNodes(const FVector& Position,
+	TSet<TSharedPtr<FPR_BSPNode>>& OutNearbyNodes, int32 MaxSearchDepth, int32 CurrentSearchDepth) const
+{
+	if (!RootNode)
+	{
+		return;
+	}
+
+	if (TSharedPtr<FPR_BSPNode> Node = RootNode->FindNode(Position))
+	{
+		OutNearbyNodes.Add(Node);
+		Node->FindNearbyNodesToNode(Node, OutNearbyNodes, MaxSearchDepth, CurrentSearchDepth);
 	}
 }
